@@ -1253,10 +1253,10 @@ paths:
           description: Sender account not found
           schema:
             $ref: '#/definitions/Error'
-  /tx/channel/create:
+  /debug/channels/create:
     post:
       tags:
-        - external
+        - internal
         - dev
       operationId: PostChannelCreate
       description: 'Get a channel_create transaction object'
@@ -1281,10 +1281,10 @@ paths:
           description: Initiator not found
           schema:
             $ref: '#/definitions/Error'
-  /tx/channel/deposit:
+  /debug/channels/deposit:
     post:
       tags:
-        - external
+        - internal
         - dev
       operationId: PostChannelDeposit
       description: 'Get a channel_deposit transaction object'
@@ -1305,12 +1305,12 @@ paths:
           description: Invalid transaction
           schema:
             $ref: '#/definitions/Error'
-  /tx/channel/withdrawal:
+  /debug/channels/withdraw:
     post:
       tags:
-        - external
+        - internal
         - dev
-      operationId: PostChannelWithdrawal
+      operationId: PostChannelWithdraw
       description: 'Get a channel_withdrawal transaction object'
       produces:
         - application/json
@@ -1319,7 +1319,7 @@ paths:
           name: body
           required: true
           schema:
-            $ref: '#/definitions/ChannelWithdrawalTx'
+            $ref: '#/definitions/ChannelWithdrawTx'
       responses:
         '200':
           description: Successful operation
@@ -1329,10 +1329,10 @@ paths:
           description: Invalid transaction
           schema:
             $ref: '#/definitions/Error'
-  /tx/channel/snapshot/solo:
+  /debug/channels/snapshot/solo:
     post:
       tags:
-        - external
+        - internal
         - dev
       operationId: PostChannelSnapshotSolo
       description: 'Get a channel_snapshot_solo transaction object'
@@ -1353,10 +1353,10 @@ paths:
           description: Invalid transaction
           schema:
             $ref: '#/definitions/Error'
-  /tx/channel/close/mutual:
+  /debug/channels/close/mutual:
     post:
       tags:
-        - external
+        - internal
         - dev
       operationId: PostChannelCloseMutual
       description: 'Get a channel_close_mutual transaction object'
@@ -1377,10 +1377,10 @@ paths:
           description: Invalid transaction
           schema:
             $ref: '#/definitions/Error'
-  /tx/channel/close/solo:
+  /debug/channels/close/solo:
     post:
       tags:
-        - external
+        - internal
         - dev
       operationId: PostChannelCloseSolo
       description: 'Get a channel_close_solo transaction object'
@@ -1401,10 +1401,10 @@ paths:
           description: Invalid transaction
           schema:
             $ref: '#/definitions/Error'
-  /tx/channel/slash:
+  /debug/channels/slash:
     post:
       tags:
-        - external
+        - internal
         - dev
       operationId: PostChannelSlash
       description: 'Get a channel_slash transaction object'
@@ -1425,10 +1425,10 @@ paths:
           description: Invalid transaction
           schema:
             $ref: '#/definitions/Error'
-  /tx/channel/settle:
+  /debug/channels/settle:
     post:
       tags:
-        - external
+        - internal
         - dev
       operationId: PostChannelSettle
       description: 'Get a channel_settle transaction object'
@@ -2374,7 +2374,7 @@ definitions:
     - nonce
     - state_hash
     - round
-  ChannelWithdrawalTx:
+  ChannelWithdrawTx:
     type: object
     properties:
       channel_id:
@@ -2652,7 +2652,7 @@ definitions:
   ChannelWithdrawalTxJSON:
     allOf:
       - $ref: '#/definitions/GenericTx'
-      - $ref: '#/definitions/ChannelWithdrawalTx'
+      - $ref: '#/definitions/ChannelWithdrawTx'
   ChannelCloseMutualTxJSON:
     allOf:
       - $ref: '#/definitions/GenericTx'
