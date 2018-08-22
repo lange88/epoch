@@ -9,6 +9,7 @@ It:
 * Increases beneficiary reward delay to 180 key blocks / generations. This impacts consensus.
 * Fixed sporadically seen timeout errors in sync when inet:getaddr took too much time to resolve
 * Detects more possible race conditions in state channel updates, thereby also making it possible to "softly reject" an update, by requesting a competing update in response to a signing request. This should be seen as a temporary measure until support for rejecting a signing request is implemented.
+* Fine-tunes the determinism of the computation of the dynamic component of the fee of oracle transactions related to TTL of objects (oracles, queries, responses) on state trees, moving floating point computations to integer based ones. This impacts consensus.
 
 [this-release]: https://github.com/aeternity/epoch/releases/tag/v0.21.0
 [digishield_v3]: https://github.com/zawy12/difficulty-algorithms/issues/9
