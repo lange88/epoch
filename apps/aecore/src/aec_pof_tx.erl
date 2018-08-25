@@ -137,16 +137,19 @@ process(PoFTx, _Context, Trees0, _Height, _ConsensusVersion, _TxHash) ->
     {ok, RecipientPubkey} = resolve_reporter(PoFTx, Trees0),
     AccountsTrees0 = aec_trees:accounts(Trees0),
 
-    %% TODO: remove funds from malicious leader
-    %%       or just never apply coinbase - if it is in delayed
-    %%       check height to figure out which case we deal with
-
     {value, RecipientAccount0} = aec_accounts_trees:lookup(RecipientPubkey, AccountsTrees0),
     {ok, RecipientAccount} = aec_accounts:earn(RecipientAccount0, aec_governance:fraud_reward()),
     AccountsTrees1 = aec_accounts_trees:enter(RecipientAccount, AccountsTrees0),
 
-    Trees = aec_trees:set_accounts(Trees0, AccountsTrees1),
-    {ok, Trees}.
+    %% 1. parse headers from pof
+    %% 2. compare fraud height and Height
+    %% 3. should we remove funds or it's handled by coinbase?
+    %%    Probably in most cases it will be coinbase catch
+    %%    It means we need a Fraud Tree with hashes of malicious keyblocks
+
+    Trees1 = aec_trees:set_accounts(Trees0, AccountsTrees1),
+
+    {ok, Trees1}.
 
 -spec signers(tx(), aec_trees:trees()) -> {ok, [aec_keys:pubkey()]}.
 signers(#pof_tx{} = Tx, _) -> {ok, [reporter_pubkey(Tx)]}.
