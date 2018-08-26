@@ -132,20 +132,14 @@ check(#pof_tx{} = PoFTx, _Context, Trees, _Height, _ConsensusVersion) ->
 
 -spec process(tx(), aetx:tx_context(), aec_trees:trees(), aec_blocks:height(),
               non_neg_integer(), binary() | no_tx_hash) -> {ok, aec_trees:trees()}.
-process(PoFTx, _Context, Trees0, _Height, _ConsensusVersion, _TxHash) ->
+process(#pof_tx{fee = Fee} = PoFTx, _Context, Trees0, _Height, _ConsensusVersion, _TxHash) ->
 
-    {ok, RecipientPubkey} = resolve_reporter(PoFTx, Trees0),
+    {ok, Reporter} = resolve_reporter(PoFTx, Trees0),
     AccountsTrees0 = aec_trees:accounts(Trees0),
 
-    {value, RecipientAccount0} = aec_accounts_trees:lookup(RecipientPubkey, AccountsTrees0),
-    {ok, RecipientAccount} = aec_accounts:earn(RecipientAccount0, aec_governance:fraud_reward()),
+    {value, RecipientAccount0} = aec_accounts_trees:lookup(Reporter, AccountsTrees0),
+    {ok, RecipientAccount} = aec_accounts:spend(RecipientAccount0, Fee),
     AccountsTrees1 = aec_accounts_trees:enter(RecipientAccount, AccountsTrees0),
-
-    %% 1. parse headers from pof
-    %% 2. compare fraud height and Height
-    %% 3. should we remove funds or it's handled by coinbase?
-    %%    Probably in most cases it will be coinbase catch
-    %%    It means we need a Fraud Tree with hashes of malicious keyblocks
 
     Trees1 = aec_trees:set_accounts(Trees0, AccountsTrees1),
 
@@ -262,6 +256,7 @@ check_fraud_headers(#pof_tx{header = _Header, fraud_header = _FraudHeader} = _Tx
     %% 3. pull pub key from offendersKeyBlock
     %% 4. check signatures
     %% 5. check prev
+    %% 6. check height - we can only punish before coinbase kicks in
     ok.
 
 get_offenders_keyblock(#pof_tx{offender = Offender}) ->
