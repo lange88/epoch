@@ -30,7 +30,6 @@
 %% Getters
 -export([header/1,
          fraud_header/1,
-         offender/1,
          reporter/1]).
 
 -export([check_reporter_account/3,
@@ -45,7 +44,6 @@
 
 -record(pof_tx, {
           reporter     :: aec_id:id(),
-          offender     :: block_header_hash(), %% INFO: key block hash
           header       :: aec_id:headers(),
           fraud_header :: aec_id:headers(),
           fee   = 0    :: non_neg_integer(),
@@ -62,7 +60,6 @@
 
 -spec new(map()) -> {ok, aetx:tx()}.
 new(#{reporter     := Reporter,
-      offender     := Offender,
       header       := Header,
       fraud_header := FraudHeader,
       fee          := Fee,
@@ -72,7 +69,6 @@ new(#{reporter     := Reporter,
                                           is_binary(FraudHeader) ->
     assert_reporter(Reporter),
     Tx = #pof_tx{reporter     = Reporter,
-                 offender     = Offender,
                  header       = Header,
                  fraud_header = FraudHeader,
                  fee          = Fee,
@@ -112,21 +108,16 @@ check(#pof_tx{} = PoFTx, _Context, Trees, _Height, _ConsensusVersion) ->
     Checks = [fun check_reporter_account/3,
               fun check_fraud_headers/3],
 
-    case get_offenders_keyblock(PoFTx) of
-        {ok, OffendersKeyBlock} ->
-            case aeu_validation:run(Checks, [PoFTx, Trees, OffendersKeyBlock]) of
-                ok ->
-                    case resolve_reporter(PoFTx, Trees) of
-                        {ok, RecipientPubkey} ->
-                            {ok, aec_trees:ensure_account(RecipientPubkey, Trees)};
-                        {error, _} = E ->
-                            E
-                    end;
-                {error, _Reason} = Error ->
-                    Error
+    case aeu_validation:run(Checks, [PoFTx, Trees]) of
+        ok ->
+            case resolve_reporter(PoFTx, Trees) of
+                {ok, RecipientPubkey} ->
+                    {ok, aec_trees:ensure_account(RecipientPubkey, Trees)};
+                {error, _} = E ->
+                    E
             end;
-        error ->
-            {error, missing_offenders_keyblock}
+        {error, _Reason} = Error ->
+            Error
     end.
 
 
@@ -149,7 +140,6 @@ process(#pof_tx{fee = Fee} = PoFTx, _Context, Trees0, _Height, _ConsensusVersion
 signers(#pof_tx{} = Tx, _) -> {ok, [reporter_pubkey(Tx)]}.
 serialize(#pof_tx{
              reporter = Reporter,
-             offender = Offender,
              header = Header,
              fraud_header = FraudHeader,
              fee = Fee,
@@ -159,7 +149,6 @@ serialize(#pof_tx{
      [ {reporter, Reporter}
      , {header, Header}
      , {fraud_header, FraudHeader}
-     , {offender, Offender}
      , {fee, Fee}
      , {ttl, TTL}
      , {nonce, Nonce}
@@ -169,7 +158,6 @@ deserialize(?POF_TX_VSN,
             [ {reporter, Reporter}
             , {header, Header}
             , {fraud_header, FraudHeader}
-            , {offender, Offender}
             , {fee, Fee}
             , {ttl, TTL}
             , {nonce, Nonce}
@@ -180,14 +168,12 @@ deserialize(?POF_TX_VSN,
        reporter = Reporter,
        header = Header,
        fraud_header = FraudHeader,
-       offender = Offender,
        fee = Fee,
        ttl = TTL,
        nonce = Nonce}.
 
 serialization_template(?POF_TX_VSN) ->
     [ {reporter, id}
-    , {offender, binary}
     , {header, binary}               %% TODO: add header tag?
     , {fraud_header, binary}         %% TODO: add header tag?
     , {fee, int}
@@ -203,7 +189,6 @@ for_client(#pof_tx{
               nonce = Nonce} = Tx) ->
     #{<<"reporter">> => aec_base58c:encode(id_hash, reporter(Tx)),
       <<"data_schema">> => <<"SpendTxJSON">>, % swagger schema name
-      <<"offender">> => aec_base58c:encode(block_hash, offender(Tx)),
       <<"header">> => Header,
       <<"fraud_header">> => FraudHeader,
       <<"fee">> => Fee,
@@ -222,10 +207,6 @@ header(#pof_tx{header = Header}) ->
 -spec fraud_header(tx()) -> aec_id:header().
 fraud_header(#pof_tx{fraud_header = FraudHeader}) ->
     FraudHeader.
-
--spec offender(tx()) -> aec_id:id().
-offender(#pof_tx{offender = Offender}) ->
-    Offender.
 
 -spec reporter(tx()) -> aec_id:id().
 reporter(#pof_tx{reporter = Reporter}) ->
@@ -253,14 +234,12 @@ check_fraud_headers(#pof_tx{header = _Header, fraud_header = _FraudHeader} = _Tx
     %% TODO:
     %% 1. deserialize header
     %% 2. deserialize second header
-    %% 3. pull pub key from offendersKeyBlock
-    %% 4. check signatures
-    %% 5. check prev
-    %% 6. check height - we can only punish before coinbase kicks in
+    %% 3. cross-check offender's  pull pub key
+    %% 4. get offender's key block
+    %% 5. check signatures
+    %% 6. check prev
+    %% 7. check height - we can only punish before coinbase kicks in
     ok.
-
-get_offenders_keyblock(#pof_tx{offender = Offender}) ->
-    aec_chain:get_block(Offender).
 
 resolve_reporter(#pof_tx{reporter = Reporter}, _Trees) ->
     {account,  RecipientPubkey} = aec_id:specialize(Reporter),
