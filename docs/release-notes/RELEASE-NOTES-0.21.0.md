@@ -12,6 +12,7 @@ It:
 * Changes the serialization format of micro headers to include the signature. This changes both what is signed by the miner, and how the block hash for micro blocks is computed. This affects consensus.
 * Changes micro block gossip to use Light micro blocks, containing only Tx hashes. In most cases the receiving node
   has already seen all transactions so this saves bandwidth. This bumps the P2P_PROTOCOL_VSN.
+* Fixes coinbase instruction in aevm. This impacts consensus.
 
 [this-release]: https://github.com/aeternity/epoch/releases/tag/v0.21.0
 [digishield_v3]: https://github.com/zawy12/difficulty-algorithms/issues/9
